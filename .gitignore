@@ -1,0 +1,4 @@
+*.iso
+*.img
+.kvmconfig
+openVPN/
