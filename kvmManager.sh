@@ -118,7 +118,7 @@ modify_vm() {
 
 create_vm() {
     vm_name=$1
-    
+
     # Get the memory and vcpu options from the user
     read -p "Enter the amount of memory for the new virtual machine (in GB): " vm_memory
 
@@ -217,16 +217,19 @@ setup_bridge() {
 
 # Main menu
 
+echo "====== KVM MANAGER ======"
+echo "by Eric Roy & Isaac Iglesias"
+
 while true; do
 
-    echo "Select an option:"
     echo "1. Start VM"
     echo "2. Modify VM"
     echo "3. Create VM"
     echo "4. Set Up Linux Bridge"
     echo "5. Modify Linux Bridge"
     echo "6. Quit"
-    read choice
+
+    read -p "Select an option: " choice
 
     case $choice in
         1)
