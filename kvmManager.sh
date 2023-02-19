@@ -117,8 +117,8 @@ modify_vm() {
 }
 
 create_vm() {
-    read -p "Enter the name of the new virtual machine: " vm_name
-
+    vm_name=$1
+    
     # Get the memory and vcpu options from the user
     read -p "Enter the amount of memory for the new virtual machine (in GB): " vm_memory
 
@@ -248,7 +248,6 @@ while true; do
             read -p "Enter name of the Linux Bridge to modify: " br_name
             modify_bridge $br_name
             ;;
-
         6)
             exit
             ;;
