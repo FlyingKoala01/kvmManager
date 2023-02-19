@@ -29,17 +29,18 @@ start_vm() {
 
     cmd="kvm -hda ${vm_name}.img -m ${vm_ram}M -net nic"
 
-    if [ "$hostfwd" == "1" ]; then
+    if [ "$hostfwd" == "1" ] && [ "$net" == "user" ]; then
         cmd="$cmd -net ${net},hostfwd=${proto}::${hport}-:${gport}"
     fi
 
-    if [ "$br" == "y" ]; then
-        cmd="$cmd macaddr=${vm_mac} -net ${net},script=no"
+    if [ "$net" == "tap" ]; then
+        cmd="${cmd},macaddr=${vm_mac} -net ${net},script=no"
+        echo "$cmd"
         eval "$cmd"
         return
     fi
 
-    cmd="$cmd"
+    echo "$cmd"
 
     eval "$cmd"
 
@@ -84,13 +85,13 @@ modify_vm() {
         echo "NET MODE(7) = $net"
         echo "exit(8)"
 
-        read -p "Which one would you like to modify? (1-7)" choice
+        read -p "Which one would you like to modify? (1-8) " choice
         case $choice in
             1)
-                read -p "Enter the new amout of RAM: " vm_name
+                read -p "Enter the new amout of RAM: " vm_ram
                 ;;
             2)
-                read -p "Enter the new MAC Addr: " vm_mac
+                read -ei "52:54:00:12:34:56" -p "Enter the new MAC address (enter for default): " vm_mac
                 ;;
             3)
                 read -p "Enter new state of HOSTFWD flag (1/0): " hostfwd
@@ -145,14 +146,17 @@ create_vm() {
     fi
 
     echo "Creating a virtual disk"
+    echo "------------------------"
     qemu-img create -f qcow2 ${vm_name}.img ${vm_memory}G
+    echo ""
 
     echo "Before logging into the VM. We need to specify some parameters."
     echo "Don't worry, you can change them in a future ( check .kvmconfig for more)"
+    echo ""
 
     read -p "Enter the amout of RAM for the new virtual machine (in MB): " vm_ram
 
-    read -ei "52:54:00:12:34:56" -p "Enter the MAC address for the new virtual machine (enter for default): " vm_mac_address
+    read -ei "52:54:00:12:34:56" -p "Enter the MAC address for the new virtual machine (enter for default): " vm_mac
 
     read -p "Would you like to activate host port forwarding? (y/n) " hostfwd
 
@@ -162,7 +166,7 @@ create_vm() {
     net="user"
 
     if [ "$hostfwd" == "y" ]; then
-        hostfwd = 1
+        hostfwd=1
         echo "Protocol?(tcp/udp)"
         read proto
         echo "Host Port?"
@@ -170,11 +174,8 @@ create_vm() {
         echo "Guest Port?"
         read gport
     fi
-    
-    read -p "Would you like to connect the VM's to a Linux Bridge? (y/n) " br
-    if [ "$br" == "y" ]; then
-        net="tap"
-    fi
+    hostfwd=0
+
     # Write the configuration to the .kvmconfig
     echo "$vm_name|$vm_ram|$vm_mac|$hostfwd|$hport|$gport|$proto|$net" >> .kvmconfig
 
@@ -186,11 +187,9 @@ create_vm() {
         cmd="$cmd -net ${net},hostfwd=${proto}::${hport}-:${gport}"
     fi
 
-    if [ "$br" == "y" ]; then
-        cmd="$cmd macaddr=${vm_mac} -net ${net},script=no"
-    fi
-
     cmd="$cmd -net user"
+    
+    echo "$cmd"
 
     eval "$cmd"
 }
@@ -219,16 +218,17 @@ setup_bridge() {
 
 echo "====== KVM MANAGER ======"
 echo "by Eric Roy & Isaac Iglesias"
+echo ""
 
 while true; do
-
+    echo "------------------"
     echo "1. Start VM"
     echo "2. Modify VM"
     echo "3. Create VM"
     echo "4. Set Up Linux Bridge"
     echo "5. Modify Linux Bridge"
     echo "6. Quit"
-
+    echo "------------------"
     read -p "Select an option: " choice
 
     case $choice in
