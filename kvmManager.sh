@@ -195,6 +195,26 @@ create_vm() {
     eval "$cmd"
 }
 
+setup_bridge() {
+    br_name=$1
+
+    if [ "$EUID" -ne 0 ]
+        then echo "The network options must be ran as root."
+        exit
+    fi
+
+    read -p "Enter the Bridge Address (IP) for the HOST machine: " br_ip
+    read -p "Enter the Bridge Mask for the HOST machine (i.e 255.255.0.0): " br_mask
+
+    echo "auto $br_name" >> /etc/network/interfaces
+    echo "iface $br_name inet static" >> /etc/network/interfaces
+    echo "      address $br_ip" >> /etc/network/interfaces
+    echo "      netmask $br_mask" >> /etc/network/interfaces
+    echo "      bridge_ports none" >> /etc/network/interfaces
+    
+    ifup $br_name
+}
+
 # Main menu
 
 while true; do
@@ -203,24 +223,33 @@ while true; do
     echo "1. Start VM"
     echo "2. Modify VM"
     echo "3. Create VM"
-    echo "4. Quit"
+    echo "4. Set Up Linux Bridge"
+    echo "5. Modify Linux Bridge"
+    echo "6. Quit"
     read choice
 
     case $choice in
         1)
-            echo "Enter the name of the virtual machine to start:"
-            read vm_name
+            read -p "Enter the name of the virtual machine to start: " vm_name
             start_vm $vm_name
             ;;
         2)
-            echo "Enter the name of the virtual machine to modify:"
-            read vm_name
+            read -p "Enter the name of the virtual machine to modify: " vm_name
             modify_vm $vm_name
             ;;
-        3)
-            create_vm
+        3) read -p "Enter the name of the virtual machine to create: " vm_name
+            create_vm $vm_name
             ;;
         4)
+            read -p "Enter name of the Linux Bridge to set up: " br_name
+            setup_bridge $br_name
+            ;;
+        5)
+            read -p "Enter name of the Linux Bridge to modify: " br_name
+            modify_bridge $br_name
+            ;;
+
+        6)
             exit
             ;;
         *)
