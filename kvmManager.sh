@@ -91,7 +91,7 @@ modify_vm() {
                 read -p "Enter the new amout of RAM: " vm_ram
                 ;;
             2)
-                read -ei "52:54:00:12:34:56" -p "Enter the new MAC address (enter for default): " vm_mac
+                read -ei "52:54:00:99:34:56" -p "Enter the new MAC address (enter for default): " vm_mac
                 ;;
             3)
                 read -p "Enter new state of HOSTFWD flag (1/0): " hostfwd
@@ -156,7 +156,7 @@ create_vm() {
 
     read -p "Enter the amout of RAM for the new virtual machine (in MB): " vm_ram
 
-    read -ei "52:54:00:12:34:56" -p "Enter the MAC address for the new virtual machine (enter for default): " vm_mac
+    read -ei "52:54:00:99:34:56" -p "Enter the MAC address for the new virtual machine (enter for default): " vm_mac
 
     read -p "Would you like to activate host port forwarding? (y/n) " hostfwd
 
@@ -164,7 +164,8 @@ create_vm() {
     hport="N.A"
     gport="N.A"
     net="user"
-
+    hostfwd=0
+    
     if [ "$hostfwd" == "y" ]; then
         hostfwd=1
         echo "Protocol?(tcp/udp)"
@@ -174,13 +175,12 @@ create_vm() {
         echo "Guest Port?"
         read gport
     fi
-    hostfwd=0
+    
 
     # Write the configuration to the .kvmconfig
     echo "$vm_name|$vm_ram|$vm_mac|$hostfwd|$hport|$gport|$proto|$net" >> .kvmconfig
 
     # Create the virtual machine
-
     cmd="kvm -hda ${vm_name}.img -m ${vm_ram}M -cdrom $vm_iso_file -net nic"
 
     if [ "$hostfwd" == "y" ]; then
@@ -194,26 +194,6 @@ create_vm() {
     eval "$cmd"
 }
 
-setup_bridge() {
-    br_name=$1
-
-    if [ "$EUID" -ne 0 ]
-        then echo "The network options must be ran as root."
-        exit
-    fi
-
-    read -p "Enter the Bridge Address (IP) for the HOST machine: " br_ip
-    read -p "Enter the Bridge Mask for the HOST machine (i.e 255.255.0.0): " br_mask
-
-    echo "auto $br_name" >> /etc/network/interfaces
-    echo "iface $br_name inet static" >> /etc/network/interfaces
-    echo "      address $br_ip" >> /etc/network/interfaces
-    echo "      netmask $br_mask" >> /etc/network/interfaces
-    echo "      bridge_ports none" >> /etc/network/interfaces
-    
-    ifup $br_name
-}
-
 # Main menu
 
 echo "====== KVM MANAGER ======"
@@ -225,9 +205,7 @@ while true; do
     echo "1. Start VM"
     echo "2. Modify VM"
     echo "3. Create VM"
-    echo "4. Set Up Linux Bridge"
-    echo "5. Modify Linux Bridge"
-    echo "6. Quit"
+    echo "4. Quit"
     echo "------------------"
     read -p "Select an option: " choice
 
@@ -244,14 +222,6 @@ while true; do
             create_vm $vm_name
             ;;
         4)
-            read -p "Enter name of the Linux Bridge to set up: " br_name
-            setup_bridge $br_name
-            ;;
-        5)
-            read -p "Enter name of the Linux Bridge to modify: " br_name
-            modify_bridge $br_name
-            ;;
-        6)
             exit
             ;;
         *)
